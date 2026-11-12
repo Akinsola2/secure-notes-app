@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Secure Notes
 
-## Getting Started
+A private notes app for tutors. Email/password authentication is provided by
+Supabase Auth, and database row-level security ensures each tutor can access
+only their own notes. Notes can be organized with tags and searched by title or
+tag.
 
-First, run the development server:
+The collection has its own page, and the note editor supports bold and
+underlined text, headings, numbered or bulleted lists, and text alignment.
+
+## Set up Supabase
+
+1. For a new project, run [`db/schema.sql`](./db/schema.sql) in the Supabase SQL
+   Editor. For an existing project, run
+   [`db/migrations/20261112_add_note_tags.sql`](./db/migrations/20261112_add_note_tags.sql)
+   to add tags without recreating the notes table.
+2. Turn off email confirmation in Supabase Auth if accounts should be able to
+   sign in immediately after signing up.
+3. Add the Supabase project URL and publishable key to `.env.local`:
+
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+   ```
+
+   The app uses the publishable key with the signed-in user's session. Do not
+   use a service-role key or a database password.
+
+4. To enable Google sign-in, enable the Google provider under Supabase Auth >
+   Providers and enter the OAuth client ID and secret from Google Cloud.
+   In Supabase Auth > URL Configuration, allow the local and deployed callback
+   URLs (`http://localhost:3000/auth/callback**` and
+   `https://your-domain.com/auth/callback**`). Add the callback URL shown by
+   Supabase to the authorized redirect URIs in Google Cloud.
+5. Password recovery uses the same callback. Keep the local and deployed
+   callback URLs in Supabase's allowed redirect URLs so reset emails can return
+   to `/reset-password`.
+
+The login page can remember an email on this device when the user opts in.
+Passwords are never stored by the app; users can save them with their browser's
+password manager.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For deployment, configure the same two environment variables in the hosting
+provider and deploy the app. Keep email confirmation settings consistent with
+the desired sign-up flow.

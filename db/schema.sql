@@ -4,6 +4,7 @@ user_id uuid not null default auth.uid() references auth.users (id) on
 delete cascade,
 title text not null check (length(trim(title)) > 0),
 body text not null default '',
+tag text not null default '',
 created_at timestamptz not null default now(),
 updated_at timestamptz not null default now()
 );

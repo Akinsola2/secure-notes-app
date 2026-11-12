@@ -34,16 +34,19 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   const isLoginPage = request.nextUrl.pathname === "/login";
+  const isForgotPasswordPage =
+    request.nextUrl.pathname === "/forgot-password";
+  const isAuthCallback = request.nextUrl.pathname === "/auth/callback";
 
-  if (!user && !isLoginPage) {
+  if (!user && !isLoginPage && !isForgotPasswordPage && !isAuthCallback) {
     return redirectWithCookies("/login");
   }
 
-  if (user && isLoginPage) {
+  if (user && (isLoginPage || isForgotPasswordPage)) {
     return redirectWithCookies("/");
   }
 
-  return response;
+  return setNoStore(response);
 
   function redirectWithCookies(path: string) {
     const redirectResponse = NextResponse.redirect(
@@ -52,7 +55,17 @@ export async function proxy(request: NextRequest) {
     response.cookies.getAll().forEach((cookie) => {
       redirectResponse.cookies.set(cookie);
     });
-    return redirectResponse;
+    return setNoStore(redirectResponse);
+  }
+
+  function setNoStore(target: NextResponse) {
+    target.headers.set(
+      "Cache-Control",
+      "private, no-store, no-cache, max-age=0, must-revalidate",
+    );
+    target.headers.set("Pragma", "no-cache");
+    target.headers.set("Expires", "0");
+    return target;
   }
 }
 
