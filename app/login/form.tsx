@@ -1,12 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
-import Link from "next/link";
-import { logIn, signInWithGoogle, signUp } from "./actions";
+import { useActionState, useState } from "react";
+import { logIn, signUp } from "./actions";
 
 const initialState: { error?: string } = {};
-const rememberedEmailKey = "secure-notes.remembered-email";
 type Mode = "login" | "signup";
 type IconName = "user" | "mail" | "lock" | "eye" | "eyeOff";
 
@@ -102,17 +99,9 @@ function PasswordField({
   );
 }
 
-export default function LoginForm({
-  initialGoogleError = false,
-}: {
-  initialGoogleError?: boolean;
-} = {}) {
+export default function LoginForm() {
   const [loginState, loginAction, isLoggingIn] = useActionState(
     logIn,
-    initialState,
-  );
-  const [googleState, googleAction, isSigningInWithGoogle] = useActionState(
-    signInWithGoogle,
     initialState,
   );
   const [signupState, signupAction, isSigningUp] = useActionState(
@@ -122,70 +111,16 @@ export default function LoginForm({
   const [mode, setMode] = useState<Mode>("login");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
-  const [rememberEmailError, setRememberEmailError] = useState<string>();
-  const emailInput = useRef<HTMLInputElement>(null);
-  const rememberEmailInput = useRef<HTMLInputElement>(null);
   const isSignup = mode === "signup";
   const error = isSignup
     ? signupState.error
-    : (googleState.error ??
-      loginState.error ??
-      (initialGoogleError
-        ? "Google sign-in couldn't be completed. Try again or use email and password."
-        : undefined));
-  const isPending = isLoggingIn || isSigningUp || isSigningInWithGoogle;
-
-  useEffect(() => {
-    if (isSignup) {
-      return;
-    }
-
-    try {
-      const savedEmail = window.localStorage.getItem(rememberedEmailKey);
-      if (emailInput.current) {
-        emailInput.current.value = savedEmail ?? "";
-      }
-      if (rememberEmailInput.current) {
-        rememberEmailInput.current.checked = Boolean(savedEmail);
-      }
-    } catch (storageError) {
-      console.error("Unable to read remembered email", storageError);
-    }
-  }, [isSignup]);
+    : loginState.error;
+  const isPending = isLoggingIn || isSigningUp;
 
   function switchMode(nextMode: Mode) {
     setMode(nextMode);
     setPasswordVisible(false);
     setConfirmPasswordVisible(false);
-  }
-
-  function saveRememberedEmail(email: string | null) {
-    try {
-      if (email) {
-        window.localStorage.setItem(rememberedEmailKey, email);
-      } else {
-        window.localStorage.removeItem(rememberedEmailKey);
-      }
-      setRememberEmailError(undefined);
-    } catch (storageError) {
-      console.error("Unable to save remembered email", storageError);
-      setRememberEmailError("Your browser couldn't save the email.");
-    }
-  }
-
-  function handleEmailFormSubmit(event: FormEvent<HTMLFormElement>) {
-    if (isSignup) {
-      return;
-    }
-
-    const email = new FormData(event.currentTarget).get("email");
-    saveRememberedEmail(
-      rememberEmailInput.current?.checked &&
-        typeof email === "string" &&
-        email.trim()
-        ? email.trim()
-        : null,
-    );
   }
 
   return (
@@ -206,47 +141,17 @@ export default function LoginForm({
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
           {isSignup ? "Create your notes space" : "Welcome back"}
         </h1>
-        <p className="mt-2 text-sm leading-6 text-zinc-600">
+        <p className="mt-2 mb-2 text-sm leading-6 text-zinc-600">
           {isSignup
             ? "Create a private space for the notes you want to keep."
             : "Log in to continue to your notes."}
         </p>
 
-        {!isSignup && (
-          <>
-            <form action={googleAction} className="mt-6">
-              <button
-                className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-zinc-300 bg-white px-4 py-3 font-semibold text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700 disabled:cursor-wait disabled:opacity-60"
-                disabled={isPending}
-                type="submit"
-              >
-                <span
-                  aria-hidden="true"
-                  className="grid size-6 place-items-center rounded-full border border-blue-100 font-bold text-blue-700"
-                >
-                  G
-                </span>
-                {isSigningInWithGoogle
-                  ? "Connecting to Google..."
-                  : "Continue with Google"}
-              </button>
-            </form>
-            <div className="my-6 flex items-center gap-3">
-              <span aria-hidden="true" className="h-px flex-1 bg-zinc-200" />
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                Or continue with email
-              </span>
-              <span aria-hidden="true" className="h-px flex-1 bg-zinc-200" />
-            </div>
-          </>
-        )}
-
         <form
           action={isSignup ? signupAction : loginAction}
-          className={`${isSignup ? "mt-6 " : ""}space-y-4`}
+          className="space-y-4"
           key={mode}
           noValidate={!isSignup}
-          onSubmit={handleEmailFormSubmit}
         >
           {isSignup && (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -308,7 +213,6 @@ export default function LoginForm({
                 id="email"
                 name="email"
                 placeholder="securenoteapp@gmail.com"
-                ref={emailInput}
                 required
                 type="email"
               />
@@ -325,38 +229,11 @@ export default function LoginForm({
           />
 
           {!isSignup && (
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="flex items-center gap-2 text-sm text-zinc-700">
-                  <input
-                    className="size-4 rounded border-zinc-300 accent-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
-                    defaultChecked={false}
-                    onChange={(event) => {
-                      if (!event.target.checked) {
-                        saveRememberedEmail(null);
-                      }
-                    }}
-                    ref={rememberEmailInput}
-                    type="checkbox"
-                  />
-                  Remember my email on this device
-                </label>
-                <Link
-                  className="text-sm font-semibold text-blue-700 underline-offset-4 hover:text-blue-900 hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-blue-700"
-                  href="/forgot-password"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              <p className="pl-6 text-xs leading-5 text-zinc-500">
+            <div>
+              <p className="text-xs leading-5 text-zinc-500">
                 Your browser can offer to save your password; this app never
                 stores it.
               </p>
-              {rememberEmailError && (
-                <p aria-live="polite" className="pl-6 text-xs text-amber-700">
-                  {rememberEmailError}
-                </p>
-              )}
             </div>
           )}
 

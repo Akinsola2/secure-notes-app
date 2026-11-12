@@ -1,6 +1,5 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,33 +40,6 @@ export async function logIn(
   }
 
   redirect("/");
-}
-
-export async function signInWithGoogle(): Promise<AuthFormState> {
-  const origin = (await headers()).get("origin");
-  if (!origin) {
-    return { error: "Unable to start Google sign-in. Please try again." };
-  }
-
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: new URL("/auth/callback", origin).toString(),
-    },
-  });
-
-  if (error || !data.url) {
-    console.error("Supabase Google sign-in failed", {
-      code: error?.code,
-      status: error?.status,
-    });
-    return {
-      error: "Unable to start Google sign-in. Please try again.",
-    };
-  }
-
-  redirect(data.url);
 }
 
 export async function signUp(
