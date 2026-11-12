@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { AccountFallback, AccountHeader } from "@/app/account-header";
 import DeleteNoteButton from "@/app/delete-note-button";
 import NotesSidebar from "@/app/notes-sidebar";
@@ -12,6 +13,8 @@ async function EditNoteContent({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await connection();
+
   const { id } = await params;
 
   if (!/^\d+$/.test(id)) {
